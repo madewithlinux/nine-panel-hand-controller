@@ -20,12 +20,30 @@ int gpios[] = {
 
 constexpr int num_gpios = count_of(gpios);
 
+#define KEYMAP_WASD 1
+#define KEYMAP_NUMPAD 2
+#define KEYMAP_ARROWS 3
+
+#ifndef KEYMAP_LAYOUT
+#define KEYMAP_LAYOUT KEYMAP_WASD
+#endif  // KEYMAP_LAYOUT
+
 uint8_t keycode_map[] = {
-    HID_KEY_Q,     HID_KEY_W, HID_KEY_E,
-
-    HID_KEY_A,     HID_KEY_S, HID_KEY_D,
-
-    HID_KEY_Z,     HID_KEY_X, HID_KEY_C,
+#if KEYMAP_LAYOUT == KEYMAP_WASD
+    HID_KEY_Q,     HID_KEY_W, HID_KEY_E,  //
+    HID_KEY_A,     HID_KEY_S, HID_KEY_D,  //
+    HID_KEY_Z,     HID_KEY_X, HID_KEY_C,  //
+#elif KEYMAP_LAYOUT == KEYMAP_NUMPAD
+    HID_KEY_KEYPAD_7, HID_KEY_KEYPAD_8, HID_KEY_KEYPAD_9,  //
+    HID_KEY_KEYPAD_4, HID_KEY_KEYPAD_5, HID_KEY_KEYPAD_6,  //
+    HID_KEY_KEYPAD_1, HID_KEY_KEYPAD_2, HID_KEY_KEYPAD_3,  //
+#elif KEYMAP_LAYOUT == KEYMAP_ARROWS
+    HID_KEY_NONE,       HID_KEY_ARROW_UP,   HID_KEY_NONE,         //
+    HID_KEY_ARROW_LEFT, HID_KEY_NONE,       HID_KEY_ARROW_RIGHT,  //
+    HID_KEY_NONE,       HID_KEY_ARROW_DOWN, HID_KEY_NONE,         //
+#else
+#error "unknown keymap"
+#endif
 
     HID_KEY_ENTER,
 };
@@ -46,6 +64,9 @@ void hid_task(void) {
   uint8_t hid_report_keycodes[6] = {0};
   int hid_keycode_idx = 0;
   for (int i = 0; i < num_gpios; i++) {
+    if (keycode_map[i] == HID_KEY_NONE) {
+      continue;
+    }
     int gpio = gpios[i];
     // we invert the GPIO because it pulls to ground when pressed
     if (!gpio_get(gpio)) {

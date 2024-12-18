@@ -82,3 +82,30 @@ target_compile_definitions(nine-panel-hand-controller PRIVATE
 )
 pico_add_extra_outputs(nine-panel-hand-controller)
 pico_set_binary_type(nine-panel-hand-controller copy_to_ram)
+
+
+add_executable(nine-panel-hand-controller-wasd)
+target_link_libraries(nine-panel-hand-controller-wasd common_stuff)
+target_compile_definitions(nine-panel-hand-controller-wasd PRIVATE
+    KEYMAP_LAYOUT=KEYMAP_WASD
+)
+pico_add_extra_outputs(nine-panel-hand-controller-wasd)
+pico_set_binary_type(nine-panel-hand-controller-wasd copy_to_ram)
+
+
+add_executable(nine-panel-hand-controller-numpad)
+target_link_libraries(nine-panel-hand-controller-numpad common_stuff)
+target_compile_definitions(nine-panel-hand-controller-numpad PRIVATE
+    KEYMAP_LAYOUT=KEYMAP_NUMPAD
+)
+pico_add_extra_outputs(nine-panel-hand-controller-numpad)
+pico_set_binary_type(nine-panel-hand-controller-numpad copy_to_ram)
+
+
+add_executable(nine-panel-hand-controller-arrows)
+target_link_libraries(nine-panel-hand-controller-arrows common_stuff)
+target_compile_definitions(nine-panel-hand-controller-arrows PRIVATE
+    KEYMAP_LAYOUT=KEYMAP_ARROWS
+)
+pico_add_extra_outputs(nine-panel-hand-controller-arrows)
+pico_set_binary_type(nine-panel-hand-controller-arrows copy_to_ram)

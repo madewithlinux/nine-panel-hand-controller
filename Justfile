@@ -50,3 +50,7 @@ lsusb:
 
 list-sources:
 	ls -1 src/*.h src/*.c src/*.hpp src/*.cpp
+
+uf2:
+	mkdir -p uf2
+	cp -t uf2 build/*.uf2
