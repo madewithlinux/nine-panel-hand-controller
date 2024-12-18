@@ -29,35 +29,56 @@ set(PICO_BOARD pico CACHE STRING "Board type")
 include(pico_sdk_import.cmake)
 
 project(nine-panel-hand-controller C CXX ASM)
+add_library(common_stuff INTERFACE)
 
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
-# Add executable. Default name is the project name, version 0.1
-
-add_executable(nine-panel-hand-controller main.cpp )
-
-pico_set_program_name(nine-panel-hand-controller "nine-panel-hand-controller")
-pico_set_program_version(nine-panel-hand-controller "0.1")
-
-# Modify the below lines to enable/disable output over UART/USB
-pico_enable_stdio_uart(nine-panel-hand-controller 0)
-pico_enable_stdio_usb(nine-panel-hand-controller 0)
-
-# Add the standard library to the build
-target_link_libraries(nine-panel-hand-controller
-        pico_stdlib)
-
-# Add the standard include files to the build
-target_include_directories(nine-panel-hand-controller PRIVATE
-  ${CMAKE_CURRENT_LIST_DIR}
+include_directories(src/)
+target_sources(common_stuff INTERFACE
+    ${CMAKE_CURRENT_LIST_DIR}/src/main.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/reset_interface.c
+    ${CMAKE_CURRENT_LIST_DIR}/src/reset_interface.h
+    ${CMAKE_CURRENT_LIST_DIR}/src/tusb_config.h
+    ${CMAKE_CURRENT_LIST_DIR}/src/usb_descriptors.c
+    ${CMAKE_CURRENT_LIST_DIR}/src/usb_descriptors.h
 )
 
-# Add any user requested libraries
-target_link_libraries(nine-panel-hand-controller 
-        hardware_timer
-        hardware_clocks
-        )
+# Add the standard library to the build
+# In addition to pico_stdlib required for common PicoSDK functionality, add dependency on tinyusb_device
+# for TinyUSB device support and tinyusb_board for the additional board support library used by the example
+target_link_libraries(common_stuff INTERFACE
+    pico_stdlib
+    pico_stdio_usb
+    hardware_timer
+    tinyusb_device
+    tinyusb_board
+)
 
+# Add the standard include files to the build, and Make sure TinyUSB can find tusb_config.h
+target_include_directories(common_stuff INTERFACE
+  ${CMAKE_CURRENT_LIST_DIR}
+  ${CMAKE_CURRENT_LIST_DIR}/.. # for our common lwipopts or any other standard includes, if required
+  ${CMAKE_CURRENT_LIST_DIR}/src
+)
+
+add_compile_options(-Wall
+    -Wno-format          # int != int32_t as far as the compiler is concerned because gcc has int32_t as long int
+    -Wno-unused-function # we have some for the docs that aren't called
+)
+if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    add_compile_options(-Wno-maybe-uninitialized)
+endif()
+
+
+
+#########################################
+### individual targets for different configurations
+
+add_executable(nine-panel-hand-controller)
+target_link_libraries(nine-panel-hand-controller common_stuff)
+target_compile_definitions(nine-panel-hand-controller PRIVATE
+    PLAYER_NUMBER=1
+)
 pico_add_extra_outputs(nine-panel-hand-controller)
-
+pico_set_binary_type(nine-panel-hand-controller copy_to_ram)
