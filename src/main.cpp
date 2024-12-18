@@ -7,9 +7,53 @@
 #include "tusb.h"
 #include "usb_descriptors.h"
 
-int64_t alarm_callback(alarm_id_t id, void* user_data) {
-  // Put your timeout handler code in here
-  return 0;
+int gpios[] = {
+    // these are in whatever order I happened to solder the wires in
+    12, 11, 13,
+
+    5,  6,  7,
+
+    9,  10, 8,
+
+    18,
+};
+
+constexpr int num_gpios = count_of(gpios);
+
+uint8_t keycode_map[] = {
+    HID_KEY_Q,     HID_KEY_W, HID_KEY_E,
+
+    HID_KEY_A,     HID_KEY_S, HID_KEY_D,
+
+    HID_KEY_Z,     HID_KEY_X, HID_KEY_C,
+
+    HID_KEY_ENTER,
+};
+
+void hid_task(void) {
+  // Remote wakeup
+  if (tud_suspended()) {
+    // Wake up host if we are in suspend mode
+    // and REMOTE_WAKEUP feature is enabled by host
+    tud_remote_wakeup();
+  }
+
+  // skip if hid is not ready yet
+  if (!tud_hid_ready()) {
+    return;
+  }
+
+  uint8_t hid_report_keycodes[6] = {0};
+  int hid_keycode_idx = 0;
+  for (int i = 0; i < num_gpios; i++) {
+    int gpio = gpios[i];
+    // we invert the GPIO because it pulls to ground when pressed
+    if (!gpio_get(gpio)) {
+      hid_report_keycodes[hid_keycode_idx] = keycode_map[i];
+      hid_keycode_idx++;
+    }
+  }
+  tud_hid_keyboard_report(REPORT_ID_KEYBOARD, 0, hid_report_keycodes);
 }
 
 int main() {
@@ -17,18 +61,20 @@ int main() {
   tud_init(BOARD_TUD_RHPORT);
   stdio_init_all();
 
-  // Timer example code - This example fires off the callback after 2000ms
-  add_alarm_in_ms(2000, alarm_callback, NULL, false);
-  // For more examples of timer use see https://github.com/raspberrypi/pico-examples/tree/master/timer
-
   printf("System Clock Frequency is %d Hz\n", clock_get_hz(clk_sys));
   printf("USB Clock Frequency is %d Hz\n", clock_get_hz(clk_usb));
   // For more examples of clocks use see https://github.com/raspberrypi/pico-examples/tree/master/clocks
 
+  for (int i = 0; i < num_gpios; i++) {
+    int gpio = gpios[i];
+    gpio_init(gpio);
+    gpio_set_dir(gpio, GPIO_IN);
+    gpio_pull_up(gpio);
+  }
+
   while (true) {
     tud_task();  // tinyusb device task
-                 // printf("Hello, world!\n");
-                 // sleep_ms(1000);
+    hid_task();
   }
 }
 
